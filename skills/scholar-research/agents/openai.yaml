@@ -1,0 +1,4 @@
+interface:
+  display_name: "Scholar Research"
+  short_description: "Deep, cited multi-platform trend research"
+  default_prompt: "Use $scholar-research to investigate this topic across relevant platforms and produce an evidence-backed report."
