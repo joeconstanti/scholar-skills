@@ -23,11 +23,13 @@ python3 skills/scholar-research/scripts/scholar.py report runs/ai-coding-agents
 
 ## Install
 
-Copy or symlink the skill into your agent's skills directory, or install the repository with a compatible skills installer:
+Install the skill directly from GitHub with a compatible skills installer:
 
 ```bash
-npx skills add . --skill=scholar-research
+npx skills add joeconstanti/scholar-skills --skill=scholar-research
 ```
+
+For local development, replace `joeconstanti/scholar-skills` with `.` and run the command from the repository root.
 
 The core pipeline uses only Python 3.10+. Optional collection tools such as [Scrapling](https://github.com/D4Vinci/Scrapling), [Crawl4AI](https://github.com/unclecode/crawl4ai), and [Scrapy](https://github.com/scrapy/scrapy) can be added when ordinary HTTP or browser tools are insufficient. Respect platform terms, robots directives, access controls, privacy, and rate limits; the skill never treats bypassing safeguards as a research requirement.
 
