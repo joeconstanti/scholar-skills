@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Claims ledger for scholar-verify: add claims, record verdicts, summarise."""
 from __future__ import annotations
-import argparse, json, sys
+import argparse, json, sys, os, tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -17,7 +17,18 @@ def load(path: Path) -> list[dict]:
 
 def save(path: Path, claims: list[dict]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text("".join(json.dumps(c, ensure_ascii=False, sort_keys=True) + "\n" for c in claims), encoding="utf-8")
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=path.parent, prefix=f".{path.name}.", delete=False) as stream:
+            temporary = Path(stream.name)
+            for claim in claims:
+                stream.write(json.dumps(claim, ensure_ascii=False, sort_keys=True) + "\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, path)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
 
 def cmd_add(args):
     path = Path(args.path); claims = load(path)
