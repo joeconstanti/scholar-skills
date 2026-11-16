@@ -26,7 +26,7 @@ class ScholarTests(unittest.TestCase):
             self.assertIn("duplicate skipped", duplicate.stderr); records = (run / "items.jsonl").read_text().splitlines(); self.assertEqual(len(records), 1)
             self.assertEqual(json.loads(records[0])["url"], "https://example.com/post")
             subprocess.run([sys.executable, str(SCRIPT), "report", str(run)], check=True, capture_output=True, text=True)
-            self.assertIn("[A post](https://example.com/post)", (run / "report.md").read_text())
+            report = (run / "report.md").read_text(); self.assertIn("[A post](https://example.com/post)", report); self.assertIn("### reddit (1 items)", report); self.assertIn("Rank within reddit: 1/1", report)
 
     def test_public_api_record_normalizes_text_and_time(self):
         item = COLLECTOR.record("test api", "https://example.com/a", "<b>A title</b>", "agent ops",
