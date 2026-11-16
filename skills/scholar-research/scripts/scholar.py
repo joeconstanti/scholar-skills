@@ -72,6 +72,14 @@ def cmd_add(args):
     with path.open("a", encoding="utf-8") as handle: handle.write(json.dumps(item, ensure_ascii=False, sort_keys=True) + "\n")
     print(url); return 0
 
+def cmd_log_query(args):
+    run = Path(args.run); path = run / "queries.jsonl"
+    if not (run / "run.json").exists(): raise ValueError(f"not a run directory: {run}")
+    entry = {"platform": args.platform.lower(), "query": args.query, "results": args.results, "observed_at": args.observed_at or now_iso()}
+    if args.notes: entry["notes"] = args.notes
+    with path.open("a", encoding="utf-8") as handle: handle.write(json.dumps(entry, ensure_ascii=False, sort_keys=True) + "\n")
+    print(path); return 0
+
 def cmd_report(args):
     run = Path(args.run); config = json.loads((run / "run.json").read_text(encoding="utf-8")); items = read_items(run / "items.jsonl")
     ranked = sorted(((score(i), i) for i in items), key=lambda pair: pair[0], reverse=True)
@@ -83,6 +91,11 @@ def cmd_report(args):
         lines += [f"### [{item.get('title') or item['url']}]({item['url']})", "", f"- Platform: {item.get('platform', 'unknown')} · score: {item_score:.4f}", f"- Published: {item.get('published_at', 'unknown')} · observed: {item.get('observed_at', 'unknown')}", f"- Metrics at observation: {metrics}"]
         if item.get("text"): lines.append(f"- Summary: {item['text']}")
         lines.append("")
+    queries = read_items(run / "queries.jsonl")
+    lines += ["## Coverage log", ""]
+    if not queries: lines.append("No queries logged. Use `scholar.py log-query` to record searches, including empty ones.")
+    for q in queries: lines.append(f"- {q.get('observed_at', '?')} · {q.get('platform', '?')} · `{q.get('query', '')}` → {q.get('results', '?')} results" + (f" ({q['notes']})" if q.get("notes") else ""))
+    lines.append("")
     lines += ["## Findings", "", "<!-- Cluster evidence into supported trends and counter-signals. -->", "", "## Gaps and caveats", "", "<!-- Record unavailable platforms, sampling limits, and unresolved claims. -->", ""]
     output = run / "report.md"; output.write_text("\n".join(lines), encoding="utf-8"); print(output); return 0
 
@@ -94,6 +107,8 @@ def parser():
     add = commands.add_parser("add"); add.add_argument("path"); add.add_argument("--platform", required=True); add.add_argument("--url", required=True); add.add_argument("--title", required=True)
     for name in ("author", "published_at", "observed_at", "query", "text", "notes"): add.add_argument(f"--{name.replace('_', '-')}")
     add.add_argument("--metrics", nargs="*", default=[]); add.set_defaults(func=cmd_add)
+    log = commands.add_parser("log-query"); log.add_argument("run"); log.add_argument("--platform", required=True); log.add_argument("--query", required=True)
+    log.add_argument("--results", type=int, required=True); log.add_argument("--observed-at"); log.add_argument("--notes"); log.set_defaults(func=cmd_log_query)
     report = commands.add_parser("report"); report.add_argument("run"); report.set_defaults(func=cmd_report); return root
 
 def main():

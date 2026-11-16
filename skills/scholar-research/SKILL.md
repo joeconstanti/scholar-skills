@@ -48,6 +48,12 @@ python3 <skill-dir>/scripts/scholar.py add <run>/items.jsonl \
   --metrics likes=10 comments=2 views=300 --text <summary>
 ```
 
+Log every search, including ones with no useful results, so coverage is auditable:
+
+```bash
+python3 <skill-dir>/scripts/scholar.py log-query <run> --platform reddit --query "<query>" --results 0 --notes "only spam"
+```
+
 Engagement values are platform-specific snapshots, not comparable audience counts. Store query-result pages only as discovery evidence; open the underlying source before using it to support a factual claim.
 
 ## Synthesis and stopping
