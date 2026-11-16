@@ -1,0 +1,4 @@
+interface:
+  display_name: "Scholar Verify"
+  short_description: "Claim-by-claim fact check with a source ledger"
+  default_prompt: "Use $scholar-verify to fact-check this report claim by claim against primary sources."
