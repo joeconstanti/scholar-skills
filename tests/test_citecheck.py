@@ -27,4 +27,14 @@ class CitecheckTests(unittest.TestCase):
         self.assertNotIn((3, "not-in-ledger"), codes)
         self.assertFalse([n for n, _ in codes if n in (5, 8, 10)])
 
+    def test_online_probes_each_url_once(self):
+        calls, real = [], CC.probe
+        CC.probe = lambda url, timeout: (calls.append(url), ("dead", "404"))[1]
+        try:
+            text = "A [x](https://e.org/a).\nB [y](https://e.org/a).\nC [z](https://e.org/b).\n"
+            found = CC.check(text, None, [], True, 1, workers=4)
+        finally: CC.probe = real
+        self.assertEqual(sorted(calls), ["https://e.org/a", "https://e.org/b"])
+        self.assertEqual([n for _, n, c, _ in found if c == "dead-link"], [1, 2, 3])
+
 if __name__ == "__main__": unittest.main()
