@@ -17,6 +17,7 @@ from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 from urllib.parse import quote, urlencode
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 USER_AGENT = "scholar-research/1.0 (+local evidence collection)"
@@ -47,11 +48,22 @@ def clean(value: str | None, limit: int = 800) -> str:
     return re.sub(r"\s+", " ", value).strip()[:limit]
 
 
-def get(url: str, headers: dict[str, str] | None = None) -> bytes:
+RETRY_STATUS = {429, 500, 502, 503, 504}
+
+
+def get(url: str, headers: dict[str, str] | None = None, retries: int = 2) -> bytes:
     request_headers = {"User-Agent": USER_AGENT, "Accept": "application/json, application/xml, text/xml;q=0.9, */*;q=0.8"}
     request_headers.update(headers or {})
-    with urlopen(Request(url, headers=request_headers), timeout=30) as response:
-        return response.read()
+    for attempt in range(retries + 1):
+        try:
+            with urlopen(Request(url, headers=request_headers), timeout=30) as response:
+                return response.read()
+        except HTTPError as exc:
+            if exc.code not in RETRY_STATUS or attempt == retries:
+                raise
+            wait = exc.headers.get("Retry-After") if exc.headers else None
+            time.sleep(min(30.0, float(wait)) if wait and wait.isdigit() else 2 ** (attempt + 1))
+    raise RuntimeError("unreachable")
 
 
 def get_json(url: str, headers: dict[str, str] | None = None):
@@ -111,6 +123,14 @@ def collect_github(query: str, limit: int, days: int) -> list[dict]:
             for item in data.get("items", [])[:limit] if item.get("html_url")]
 
 
+def gdelt_time(value: str | None) -> str | None:
+    """GDELT uses compact timestamps such as 20260825T090000Z."""
+    try:
+        return datetime.strptime(value or "", "%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z")
+    except ValueError:
+        return value
+
+
 def collect_gdelt(query: str, limit: int, days: int) -> list[dict]:
     start = (datetime.now(timezone.utc) - timedelta(days=days)).strftime("%Y%m%d%H%M%S")
     params = urlencode({"query": query, "mode": "artlist", "format": "json",
@@ -118,7 +138,7 @@ def collect_gdelt(query: str, limit: int, days: int) -> list[dict]:
                         "sort": "hybridrel"})
     data = get_json(f"https://api.gdeltproject.org/api/v2/doc/doc?{params}")
     return [record("gdelt doc api", item["url"], item.get("title") or item["url"], query,
-                   published_at=item.get("seendate"), text=item.get("socialimage"),
+                   published_at=gdelt_time(item.get("seendate")),
                    notes=f"GDELT news-discovery record from {item.get('domain', 'unknown domain')}; inspect the underlying article before factual use.")
             for item in data.get("articles", [])[:limit] if item.get("url")]
 

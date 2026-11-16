@@ -67,4 +67,24 @@ class QueryLogTests(unittest.TestCase):
             subprocess.run([sys.executable, str(SCRIPT), "report", str(run)], check=True, capture_output=True)
             self.assertIn("reddit · `agent ops` → 0 results", (run / "report.md").read_text())
 
+class CollectorTests(unittest.TestCase):
+    def test_gdelt_compact_time_is_iso(self):
+        self.assertEqual(COLLECTOR.gdelt_time("20260825T090000Z"), "2026-08-25T09:00:00+00:00".replace("+00:00", "Z"))
+
+    def test_get_retries_on_429(self):
+        from unittest import mock
+        from urllib.error import HTTPError
+        calls = []
+        class Resp:
+            def __enter__(self): return self
+            def __exit__(self, *a): return False
+            def read(self): return b"ok"
+        def fake(req, timeout):
+            calls.append(1)
+            if len(calls) == 1: raise HTTPError(req.full_url, 429, "slow", {"Retry-After": "0"}, None)
+            return Resp()
+        with mock.patch.object(COLLECTOR, "urlopen", fake), mock.patch.object(COLLECTOR.time, "sleep"):
+            self.assertEqual(COLLECTOR.get("https://example.com"), b"ok")
+        self.assertEqual(len(calls), 2)
+
 if __name__ == "__main__": unittest.main()
