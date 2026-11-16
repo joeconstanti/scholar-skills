@@ -51,4 +51,13 @@ class ScopeTests(unittest.TestCase):
             subprocess.run([sys.executable, str(SCRIPT), "report", str(run)], check=True, capture_output=True)
             self.assertIn("- Geography: UK", (run / "report.md").read_text())
 
+class QueryLogTests(unittest.TestCase):
+    def test_empty_query_is_logged_in_report(self):
+        with tempfile.TemporaryDirectory() as temp:
+            subprocess.run([sys.executable, str(SCRIPT), "init", "--topic", "Q", "--output", temp], check=True, capture_output=True)
+            run = Path(temp) / "q"
+            subprocess.run([sys.executable, str(SCRIPT), "log-query", str(run), "--platform", "Reddit", "--query", "agent ops", "--results", "0"], check=True, capture_output=True)
+            subprocess.run([sys.executable, str(SCRIPT), "report", str(run)], check=True, capture_output=True)
+            self.assertIn("reddit · `agent ops` → 0 results", (run / "report.md").read_text())
+
 if __name__ == "__main__": unittest.main()
