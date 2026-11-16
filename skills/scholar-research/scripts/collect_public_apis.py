@@ -8,6 +8,7 @@ the resulting records remain auditable.
 from __future__ import annotations
 
 import argparse
+import gzip
 import json
 import os
 import re
@@ -57,7 +58,8 @@ def get(url: str, headers: dict[str, str] | None = None, retries: int = 2) -> by
     for attempt in range(retries + 1):
         try:
             with urlopen(Request(url, headers=request_headers), timeout=30) as response:
-                return response.read()
+                body = response.read()
+                return gzip.decompress(body) if body[:2] == b"\x1f\x8b" else body
         except HTTPError as exc:
             if exc.code not in RETRY_STATUS or attempt == retries:
                 raise
@@ -170,7 +172,45 @@ def collect_govuk(query: str, limit: int, days: int) -> list[dict]:
     return result
 
 
+ATOM = {"a": "http://www.w3.org/2005/Atom"}
+
+
+def collect_arxiv(query: str, limit: int, days: int) -> list[dict]:
+    params = urlencode({"search_query": f"all:\"{query}\"", "max_results": min(limit, 100),
+                        "sortBy": "submittedDate", "sortOrder": "descending"})
+    root = ET.fromstring(get(f"https://export.arxiv.org/api/query?{params}"))
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    result = []
+    for entry in root.findall("a:entry", ATOM)[:limit]:
+        published = iso(entry.findtext("a:published", namespaces=ATOM))
+        if published and datetime.fromisoformat(published.replace("Z", "+00:00")) < cutoff:
+            continue
+        authors = [a.findtext("a:name", namespaces=ATOM) or "" for a in entry.findall("a:author", ATOM)]
+        result.append(record("arxiv api", (entry.findtext("a:id", namespaces=ATOM) or "").replace("http://", "https://"),
+                             entry.findtext("a:title", namespaces=ATOM) or "Untitled", query,
+                             published_at=published, author=", ".join(authors[:5]),
+                             text=entry.findtext("a:summary", namespaces=ATOM),
+                             notes="arXiv preprint; not peer reviewed. Research attention, not adoption."))
+    return [item for item in result if item["url"]]
+
+
+def collect_stackexchange(query: str, limit: int, days: int, site: str = "stackoverflow") -> list[dict]:
+    after = int((datetime.now(timezone.utc) - timedelta(days=days)).timestamp())
+    params = urlencode({"order": "desc", "sort": "votes", "q": query, "site": site,
+                        "fromdate": after, "pagesize": min(limit, 100)})
+    data = get_json(f"https://api.stackexchange.com/2.3/search/advanced?{params}")
+    return [record("stack exchange api", item["link"], item.get("title") or item["link"], query,
+                   published_at=datetime.fromtimestamp(item["creation_date"], timezone.utc).isoformat(),
+                   author=item.get("owner", {}).get("display_name"),
+                   metrics={"score": max(0, item.get("score") or 0), "answers": item.get("answer_count") or 0,
+                            "views": item.get("view_count") or 0},
+                   notes=f"{site} question tagged {', '.join(item.get('tags', [])[:5])}; implementation friction, not buyer demand.")
+            for item in data.get("items", [])[:limit] if item.get("link")]
+
+
 COLLECTORS = {
+    "arxiv": collect_arxiv,
+    "stackexchange": collect_stackexchange,
     "hn": collect_hn,
     "github": collect_github,
     "gdelt": collect_gdelt,

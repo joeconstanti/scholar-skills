@@ -8,6 +8,8 @@ Use `scripts/collect_public_apis.py` when a run needs broader, reproducible disc
 | GitHub Search | `api.github.com/search/issues` | Implementation gaps, requested features, recurring failure modes | Technical demand proxy, not commercial intent |
 | GDELT DOC 2.0 | `api.gdeltproject.org/api/v2/doc/doc` | International news discovery outside one search index | Open the publisher before citing facts |
 | Google News RSS | `news.google.com/rss/search` | Current publisher discovery and query comparison | Syndication can inflate counts |
+| arXiv | `export.arxiv.org/api/query` | Research attention and emerging methods | Preprints; not peer reviewed or adoption |
+| Stack Exchange | `api.stackexchange.com/2.3/search/advanced` | Developer how-to friction, error patterns | Practitioner pain, not buyer demand |
 | GOV.UK Search | `gov.uk/api/search.json` | UK policy, official studies, guidance and statistics | Prefer the underlying publication and methodology |
 
 `GITHUB_TOKEN` is optional but increases GitHub rate limits. Never put tokens in the report or ledger. Record endpoint errors and continue across independent sources rather than silently shrinking scope.

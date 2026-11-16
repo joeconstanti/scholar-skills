@@ -21,7 +21,7 @@ python3 skills/scholar-research/scripts/scholar.py report runs/ai-coding-agents
 
 `add` normalizes records and deduplicates them by platform, canonical URL, and observation time. `report` computes transparent, within-platform trend scores and writes `report.md`. Raw records remain JSONL so runs can be resumed, audited, or fed by browser automation and optional crawlers.
 
-For broader no-cost discovery, the skill also includes a preview-first public API collector for Hacker News Algolia, GitHub Search, GDELT DOC 2.0, Google News RSS, and GOV.UK Search:
+For broader no-cost discovery, the skill also includes a preview-first public API collector for Hacker News Algolia, GitHub Search, GDELT DOC 2.0, Google News RSS, GOV.UK Search, arXiv, and Stack Exchange:
 
 ```bash
 python3 skills/scholar-research/scripts/collect_public_apis.py runs/example/items.jsonl --preview \
