@@ -47,3 +47,9 @@ python3 <skill-dir>/scripts/claims.py summary <run>/claims.jsonl > <run>/verific
 ```
 
 The summary exits non-zero while any claim is unchecked, `contradicted`, or `unsupported`. For each such claim, edit the report: correct it, soften it to the evidence, label it as inference, or delete it. Do not change a verdict to make the check pass. Rerun until it exits zero or the user accepts the listed exceptions.
+
+### Inspect outstanding claims
+
+`python3 skills/scholar-verify/scripts/claims.py list claims.jsonl --verdict unchecked --kind number`
+
+The `list` command emits JSONL without changing the ledger. Both filters are optional and combine when supplied. Saves use atomic replacement; coordinate concurrent writers externally.
