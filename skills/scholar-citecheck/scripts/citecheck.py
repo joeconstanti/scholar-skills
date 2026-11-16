@@ -18,6 +18,17 @@ def norm(url: str) -> str:
     query = urlencode(sorted(parse_qsl(p.query, keep_blank_values=True)))
     return f"{p.netloc.lower().removeprefix('www.')}{p.path.rstrip('/')}" + (f"?{query}" if query else "")
 
+def is_search_url(url: str) -> bool:
+    p = urlsplit(url)
+    host = (p.hostname or "").lower().removeprefix("www.")
+    path = p.path.rstrip("/")
+    for entry in SEARCH_HOSTS:
+        domain, _, route = entry.partition("/")
+        route = "/" + route.rstrip("/")
+        if host == domain and (route == "/" or path == route or path.startswith(route + "/")):
+            return True
+    return False
+
 def ledger_urls(paths: list[str]) -> set[str]:
     urls = set()
     for path in paths:
@@ -70,7 +81,7 @@ def check(text: str, ledger: set[str] | None, ignore: list[str], online: bool, t
                 findings.append(("error", n, "uncited-number", sentence.strip()[:120]))
         for url in links:
             key = norm(url)
-            if any(key.startswith(h) for h in SEARCH_HOSTS): findings.append(("error", n, "bare-search-link", url))
+            if is_search_url(url): findings.append(("error", n, "bare-search-link", url))
             if ledger is not None and key not in ledger: findings.append(("warning", n, "not-in-ledger", url))
             cited.append((n, url))
     if online and cited:
