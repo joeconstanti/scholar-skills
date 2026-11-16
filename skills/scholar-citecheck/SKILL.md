@@ -15,7 +15,7 @@ python3 <skill-dir>/scripts/citecheck.py <run>/report.md \
 ```
 
 - `--ledger` (repeatable): JSONL files whose `url` or `sources` fields count as collected evidence. Omit to skip the ledger check.
-- `--online`: request each external link (HEAD, then GET on 405) with a short timeout. Omit when offline or when sites block automated requests.
+- `--online`: request each unique external link once (HEAD, then GET on 405), in parallel (`--workers`, default 8), with a short timeout. Omit when offline or when sites block automated requests.
 - `--ignore-section "Evidence ledger"` (repeatable): skip generated sections.
 
 Exit 0 means no errors. Exit 1 lists errors and warnings with line numbers.
