@@ -5,7 +5,7 @@ import argparse, json, re, sys, time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, parse_qsl, urlencode
 from urllib.request import Request, urlopen
 
 LINK = re.compile(r"\[[^\]]*\]\((https?://[^)\s]+)\)|<(https?://[^>\s]+)>")
@@ -14,7 +14,9 @@ SEARCH_HOSTS = {"google.com/search", "bing.com/search", "duckduckgo.com/", "news
 UA = "scholar-citecheck/1.0"
 
 def norm(url: str) -> str:
-    p = urlsplit(url); return f"{p.netloc.lower().removeprefix('www.')}{p.path.rstrip('/')}"
+    p = urlsplit(url)
+    query = urlencode(sorted(parse_qsl(p.query, keep_blank_values=True)))
+    return f"{p.netloc.lower().removeprefix('www.')}{p.path.rstrip('/')}" + (f"?{query}" if query else "")
 
 def ledger_urls(paths: list[str]) -> set[str]:
     urls = set()
