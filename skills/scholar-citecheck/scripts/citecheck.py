@@ -114,11 +114,17 @@ def main() -> int:
     ap.add_argument("--ignore-section", action="append", default=[]); ap.add_argument("--online", action="store_true")
     ap.add_argument("--timeout", type=float, default=10)
     ap.add_argument("--workers", type=int, default=8, help="parallel link probes with --online")
+    ap.add_argument("--format", choices=["text", "json"], default="text")
     args = ap.parse_args()
     try: text = Path(args.report).read_text(encoding="utf-8")
     except OSError as exc: print(f"error: {exc}", file=sys.stderr); return 2
     findings = check(text, ledger_urls(args.ledger) if args.ledger else None, args.ignore_section, args.online, args.timeout, args.workers)
-    for sev, n, code, detail in findings: print(f"{args.report}:{n}: {sev}: {code}: {detail}")
+    if args.format == "json":
+        print(json.dumps({"report": args.report, "findings": [
+            {"severity": sev, "line": n, "code": code, "detail": detail}
+            for sev, n, code, detail in findings]}, ensure_ascii=False))
+    else:
+        for sev, n, code, detail in findings: print(f"{args.report}:{n}: {sev}: {code}: {detail}")
     errors = sum(1 for f in findings if f[0] == "error")
     print(f"{errors} errors, {len(findings) - errors} warnings", file=sys.stderr)
     return 1 if errors else 0
