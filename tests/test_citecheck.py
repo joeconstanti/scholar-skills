@@ -57,4 +57,10 @@ class CitecheckTests(unittest.TestCase):
         found = CC.check("[x](https://e.org/?id=2)", {CC.norm("https://e.org/?id=1")}, [], False, 1)
         self.assertEqual(found[0][2], "not-in-ledger")
 
+    def test_search_url_boundaries(self):
+        self.assertTrue(CC.is_search_url("https://www.google.com/search?q=a"))
+        self.assertFalse(CC.is_search_url("https://google.com/searching"))
+        self.assertFalse(CC.is_search_url("https://chatgpt.com.example.org/article"))
+        self.assertTrue(CC.is_search_url("https://duckduckgo.com/?q=a"))
+
 if __name__ == "__main__": unittest.main()
