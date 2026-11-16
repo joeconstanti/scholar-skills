@@ -73,3 +73,5 @@ Stop when the requested deadline or cap is reached, every in-scope platform is c
 ## Deliverable
 
 Update `report.md` with an executive answer, scope and method, strongest trends, platform differences, evidence links, opportunities, caveats, and uncovered gaps. For growth work, include prioritised ICPs, offers, buying barriers, acquisition plays, advertising hypotheses, landing-page implications, measurement, and the first-party data still needed. Cite the direct item or authoritative source beside each claim. State exact collection dates and do not describe a trend as current outside the observed window.
+
+Before delivering, run the `scholar-verify` skill on the report when it contains numbers, attributions, or claims the decision depends on.
