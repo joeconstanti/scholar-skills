@@ -33,12 +33,18 @@ def ledger_urls(paths: list[str]) -> set[str]:
     urls = set()
     for path in paths:
         p = Path(path)
-        if not p.exists(): continue
-        for line in p.read_text(encoding="utf-8").splitlines():
+        for number, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
             if not line.strip(): continue
-            row = json.loads(line)
-            for u in [row.get("url"), *row.get("sources", [])]:
-                if u: urls.add(norm(u))
+            try:
+                row = json.loads(line)
+                if not isinstance(row, dict): raise ValueError("expected an object")
+                sources = row.get("sources", [])
+                if not isinstance(sources, list): raise ValueError("sources must be a list")
+                for u in [row.get("url"), *sources]:
+                    if u is not None and not isinstance(u, str): raise ValueError("URLs must be strings")
+                    if u: urls.add(norm(u))
+            except ValueError as exc:
+                raise ValueError(f"{p}:{number}: {exc}") from exc
     return urls
 
 RETRY = {429, 500, 502, 503, 504}
@@ -116,9 +122,14 @@ def main() -> int:
     ap.add_argument("--workers", type=int, default=8, help="parallel link probes with --online")
     ap.add_argument("--format", choices=["text", "json"], default="text")
     args = ap.parse_args()
-    try: text = Path(args.report).read_text(encoding="utf-8")
-    except OSError as exc: print(f"error: {exc}", file=sys.stderr); return 2
-    findings = check(text, ledger_urls(args.ledger) if args.ledger else None, args.ignore_section, args.online, args.timeout, args.workers)
+    try:
+        text = Path(args.report).read_text(encoding="utf-8")
+        ledger = ledger_urls(args.ledger) if args.ledger else None
+        if args.timeout <= 0 or args.workers <= 0:
+            raise ValueError("timeout and workers must be positive")
+        findings = check(text, ledger, args.ignore_section, args.online, args.timeout, args.workers)
+    except (OSError, ValueError) as exc:
+        print(f"error: {exc}", file=sys.stderr); return 2
     if args.format == "json":
         print(json.dumps({"report": args.report, "findings": [
             {"severity": sev, "line": n, "code": code, "detail": detail}
