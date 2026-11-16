@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "trends-mcp": {
+      "url": "https://api.trendsmcp.ai/mcp",
+      "transport": "streamable_http",
+      "headers": {
+        "Authorization": "Bearer ${TRENDSMCP_API_KEY}"
+      }
+    },
+    "x-api": {
+      "url": "https://api.x.com/mcp",
+      "headers": {
+        "Authorization": "Bearer ${X_APP_ONLY_BEARER_TOKEN}"
+      }
+    }
+  }
+}

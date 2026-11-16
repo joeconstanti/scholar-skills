@@ -34,6 +34,10 @@ Search phrases, hashtags, sounds, creators, and comments through the available U
 
 Search videos, Shorts, channels, transcripts, and comments. Record publication time, views, and comments when visible. Normalize neither views nor subscriber counts across formats; compare like with like and inspect source links in descriptions.
 
+## Public demand-signal APIs
+
+Use the no-cost collectors documented in [apis.md](apis.md) for Hacker News, GitHub issues, GDELT, Google News RSS, and GOV.UK. They widen discovery and make queries reproducible, but they do not make unlike counts comparable. Procurement notices and job posts are stronger demand proxies than discussion volume; official business surveys are stronger prevalence evidence than either.
+
 ## Collection engines
 
 Use ordinary browser or HTTP tools first. For public pages at larger scale:

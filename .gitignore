@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+.venv/
+.mcp-servers/**/node_modules/
+.DS_Store
+/research-runs/
+/.agents/
+skills-lock.json
+/scripts/
+__pycache__/
