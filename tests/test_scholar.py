@@ -12,6 +12,13 @@ class ScholarTests(unittest.TestCase):
     def test_canonical_url_removes_tracking_and_fragment(self):
         self.assertEqual(SCHOLAR.canonical_url("HTTPS://Example.com/post/?utm_source=x&id=2#reply"), "https://example.com/post?id=2")
 
+    def test_canonical_url_handles_ports_shares_and_short_links(self):
+        c = SCHOLAR.canonical_url
+        self.assertEqual(c("https://example.com:443/a?si=abc"), "https://example.com/a")
+        self.assertEqual(c("https://x.com/u/status/1?s=20&t=xyz"), "https://x.com/u/status/1")
+        self.assertEqual(c("https://youtu.be/abc123?si=zz"), "https://youtube.com/watch?v=abc123")
+        self.assertEqual(c("http://example.com:8080/a?s=keep"), "http://example.com:8080/a?s=keep")
+
     def test_score_rewards_engagement_and_recency(self):
         observed = datetime(2026, 8, 25, tzinfo=timezone.utc); base = {"published_at": "2026-08-24T00:00:00Z", "metrics": {"likes": 10}}
         self.assertGreater(SCHOLAR.score({**base, "metrics": {"likes": 100}}, observed), SCHOLAR.score(base, observed))
