@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Mechanical citation checks for Markdown research reports."""
 from __future__ import annotations
-import argparse, json, re, sys
+import argparse, json, re, sys, time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from urllib.error import HTTPError, URLError
@@ -28,19 +28,30 @@ def ledger_urls(paths: list[str]) -> set[str]:
                 if u: urls.add(norm(u))
     return urls
 
-def probe(url: str, timeout: float) -> tuple[str, str]:
+RETRY = {429, 500, 502, 503, 504}
+
+def probe(url: str, timeout: float, retries: int = 2, backoff: float = 1.0) -> tuple[str, str]:
+    """Return (status, detail). Retry transient failures with exponential backoff."""
+    result = ("blocked", "HEAD/GET refused")
+    for attempt in range(retries + 1):
+        result, transient = _probe_once(url, timeout)
+        if not transient or attempt == retries: return result
+        time.sleep(backoff * 2 ** attempt)
+    return result
+
+def _probe_once(url: str, timeout: float) -> tuple[tuple[str, str], bool]:
     for method in ("HEAD", "GET"):
         try:
             with urlopen(Request(url, method=method, headers={"User-Agent": UA}), timeout=timeout) as r:
                 final = r.geturl()
-                return ("redirect", final) if norm(final) != norm(url) else ("ok", final)
+                return (("redirect", final) if norm(final) != norm(url) else ("ok", final)), False
         except HTTPError as exc:
             if method == "HEAD" and exc.code in (403, 405, 501): continue
-            if exc.code in (401, 403, 429): return "blocked", str(exc.code)
-            return "dead", str(exc.code)
+            if exc.code in (401, 403, 429): return ("blocked", str(exc.code)), exc.code == 429
+            return ("dead", str(exc.code)), exc.code in RETRY
         except (URLError, TimeoutError, OSError) as exc:
-            return "dead", str(getattr(exc, "reason", exc))
-    return "blocked", "HEAD/GET refused"
+            return ("dead", str(getattr(exc, "reason", exc))), True
+    return ("blocked", "HEAD/GET refused"), False
 
 def check(text: str, ledger: set[str] | None, ignore: list[str], online: bool, timeout: float, workers: int = 8) -> list[tuple[str, int, str, str]]:
     findings, cited, skipping, in_code = [], [], False, False

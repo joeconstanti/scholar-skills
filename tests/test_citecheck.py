@@ -37,4 +37,18 @@ class CitecheckTests(unittest.TestCase):
         self.assertEqual(sorted(calls), ["https://e.org/a", "https://e.org/b"])
         self.assertEqual([n for _, n, c, _ in found if c == "dead-link"], [1, 2, 3])
 
+    def test_probe_retries_transient_failures(self):
+        answers, real = [(("dead", "503"), True), (("ok", "u"), False)], CC._probe_once
+        CC._probe_once = lambda url, timeout: answers.pop(0)
+        try: self.assertEqual(CC.probe("https://e.org", 1, retries=2, backoff=0), ("ok", "u"))
+        finally: CC._probe_once = real
+        self.assertEqual(answers, [])
+
+    def test_probe_does_not_retry_permanent_failures(self):
+        calls, real = [], CC._probe_once
+        CC._probe_once = lambda url, timeout: (calls.append(1), (("dead", "404"), False))[1]
+        try: self.assertEqual(CC.probe("https://e.org", 1, retries=3, backoff=0), ("dead", "404"))
+        finally: CC._probe_once = real
+        self.assertEqual(len(calls), 1)
+
 if __name__ == "__main__": unittest.main()
