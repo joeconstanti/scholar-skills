@@ -42,4 +42,13 @@ class ScholarTests(unittest.TestCase):
             self.assertEqual(COLLECTOR.append_unique(path, [item, item]), (1, 1))
             self.assertEqual(len(path.read_text().splitlines()), 1)
 
+class ScopeTests(unittest.TestCase):
+    def test_init_records_scope_and_report_shows_it(self):
+        with tempfile.TemporaryDirectory() as temp:
+            subprocess.run([sys.executable, str(SCRIPT), "init", "--topic", "Scope", "--output", temp, "--geography", "UK", "--platforms", "reddit, youtube"], check=True, capture_output=True)
+            run = Path(temp) / "scope"; config = json.loads((run / "run.json").read_text())
+            self.assertEqual(config["platforms"], ["reddit", "youtube"]); self.assertEqual(config["geography"], "UK")
+            subprocess.run([sys.executable, str(SCRIPT), "report", str(run)], check=True, capture_output=True)
+            self.assertIn("- Geography: UK", (run / "report.md").read_text())
+
 if __name__ == "__main__": unittest.main()
