@@ -9,12 +9,14 @@ Turn a research question into an auditable evidence set and an answer-first repo
 
 ## Start
 
-Clarify the topic, audience, geography, language, time window, platforms, and desired deliverable from the request. Infer low-risk omissions and record them. Never invent access to a platform: list unavailable or excluded sources in the report.
+Clarify the topic, audience, geography, language, time window, platforms, and desired deliverable from the request. Infer low-risk omissions and record them as `init` scope flags; rerun `init --force` to update scope without losing metadata. Never invent access to a platform: list unavailable or excluded sources in the report.
 
 Create a resumable run:
 
 ```bash
-python3 <skill-dir>/scripts/scholar.py init --topic "<topic>" --output <workspace>/research-runs
+python3 <skill-dir>/scripts/scholar.py init --topic "<topic>" --output <workspace>/research-runs \
+  --decision "<decision>" --audience "<audience>" --geography "<geo>" \
+  --window "<from..to>" --platforms reddit,youtube --exclusions "<out of scope>"
 ```
 
 Read [references/method.md](references/method.md) before collecting. Read only the platform sections needed from [references/platforms.md](references/platforms.md). For repeat or scheduled monitoring, also read [references/monitoring.md](references/monitoring.md).

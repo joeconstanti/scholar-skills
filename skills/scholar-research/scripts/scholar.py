@@ -7,6 +7,8 @@ from pathlib import Path
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 TRACKING_KEYS = {"fbclid", "gclid", "igshid", "ref", "source"}
+SCOPE_FIELDS = ("decision", "audience", "geography", "language", "window", "platforms", "exclusions")
+LIST_FIELDS = {"platforms", "exclusions"}
 METRIC_WEIGHTS = {"views": .05, "likes": 1, "reactions": 1, "comments": 2, "shares": 3, "reposts": 3}
 
 def now_iso(): return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
@@ -51,7 +53,12 @@ def cmd_init(args):
     run = Path(args.output) / slugify(args.topic); run.mkdir(parents=True, exist_ok=True)
     config = run / "run.json"
     if config.exists() and not args.force: raise ValueError(f"run already exists: {run} (use --force to update metadata)")
-    config.write_text(json.dumps({"topic": args.topic, "created_at": now_iso(), "status": "collecting"}, indent=2) + "\n", encoding="utf-8")
+    data = {"topic": args.topic, "created_at": now_iso(), "status": "collecting"}
+    if config.exists(): data = {**json.loads(config.read_text(encoding="utf-8")), "topic": args.topic, "updated_at": now_iso()}
+    for name in SCOPE_FIELDS:
+        value = getattr(args, name, None)
+        if value: data[name] = [v.strip() for v in value.split(",") if v.strip()] if name in LIST_FIELDS else value
+    config.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
     (run / "items.jsonl").touch(exist_ok=True); print(run); return 0
 
 def cmd_add(args):
@@ -69,7 +76,7 @@ def cmd_report(args):
     run = Path(args.run); config = json.loads((run / "run.json").read_text(encoding="utf-8")); items = read_items(run / "items.jsonl")
     ranked = sorted(((score(i), i) for i in items), key=lambda pair: pair[0], reverse=True)
     platforms = sorted({i.get("platform", "unknown") for i in items})
-    lines = [f"# Research: {config['topic']}", "", f"_Generated {now_iso()} from {len(items)} evidence items across {len(platforms)} platforms._", "", "## Executive answer", "", "<!-- Replace with evidence-backed synthesis. -->", "", "## Scope and method", "", f"Platforms observed: {', '.join(platforms) if platforms else 'None yet'}.", "", "Trend scores are within-platform reading priorities based on recency and visible engagement; they are not comparable popularity measures.", "", "## Evidence ledger", ""]
+    lines = [f"# Research: {config['topic']}", "", f"_Generated {now_iso()} from {len(items)} evidence items across {len(platforms)} platforms._", "", "## Executive answer", "", "<!-- Replace with evidence-backed synthesis. -->", "", "## Scope and method", "", f"Platforms observed: {', '.join(platforms) if platforms else 'None yet'}.", ] + [f"- {k.title()}: {', '.join(config[k]) if isinstance(config[k], list) else config[k]}" for k in SCOPE_FIELDS if config.get(k)] + ["", "Trend scores are within-platform reading priorities based on recency and visible engagement; they are not comparable popularity measures.", "", "## Evidence ledger", ""]
     if not ranked: lines.append("No evidence collected yet.")
     for item_score, item in ranked:
         metrics = ", ".join(f"{k}={v:g}" for k, v in item.get("metrics", {}).items()) or "no visible metrics"
@@ -81,7 +88,9 @@ def cmd_report(args):
 
 def parser():
     root = argparse.ArgumentParser(description=__doc__); commands = root.add_subparsers(dest="command", required=True)
-    init = commands.add_parser("init"); init.add_argument("--topic", required=True); init.add_argument("--output", default="research-runs"); init.add_argument("--force", action="store_true"); init.set_defaults(func=cmd_init)
+    init = commands.add_parser("init"); init.add_argument("--topic", required=True); init.add_argument("--output", default="research-runs"); init.add_argument("--force", action="store_true")
+    for name in SCOPE_FIELDS: init.add_argument(f"--{name}", help="comma-separated" if name in LIST_FIELDS else None)
+    init.set_defaults(func=cmd_init)
     add = commands.add_parser("add"); add.add_argument("path"); add.add_argument("--platform", required=True); add.add_argument("--url", required=True); add.add_argument("--title", required=True)
     for name in ("author", "published_at", "observed_at", "query", "text", "notes"): add.add_argument(f"--{name.replace('_', '-')}")
     add.add_argument("--metrics", nargs="*", default=[]); add.set_defaults(func=cmd_add)
