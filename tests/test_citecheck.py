@@ -63,4 +63,9 @@ class CitecheckTests(unittest.TestCase):
         self.assertFalse(CC.is_search_url("https://chatgpt.com.example.org/article"))
         self.assertTrue(CC.is_search_url("https://duckduckgo.com/?q=a"))
 
+    def test_ignored_section_includes_children(self):
+        text = "## Ignore\n10%\n### Child\n20%\n## Findings\n30%"
+        found = CC.check(text, None, ["Ignore"], False, 1)
+        self.assertEqual([f[1] for f in found], [6])
+
 if __name__ == "__main__": unittest.main()

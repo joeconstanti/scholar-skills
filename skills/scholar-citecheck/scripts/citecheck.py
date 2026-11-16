@@ -67,12 +67,17 @@ def _probe_once(url: str, timeout: float) -> tuple[tuple[str, str], bool]:
     return ("blocked", "HEAD/GET refused"), False
 
 def check(text: str, ledger: set[str] | None, ignore: list[str], online: bool, timeout: float, workers: int = 8) -> list[tuple[str, int, str, str]]:
-    findings, cited, skipping, in_code = [], [], False, False
+    findings, cited, skipping, in_code = [], [], None, False
     for n, line in enumerate(text.splitlines(), 1):
         if line.startswith("```"): in_code = not in_code; continue
         if in_code or line.lstrip().startswith(("<!--", "|---")): continue
-        if line.startswith("#"):
-            skipping = any(s.lower() in line.lower() for s in ignore)
+        heading = re.match(r"^ {0,3}(#{1,6})\s+(.+)$", line)
+        if heading:
+            level, title = len(heading[1]), heading[2]
+            if skipping is not None and level <= skipping:
+                skipping = None
+            if skipping is None and any(s.lower() in title.lower() for s in ignore):
+                skipping = level
             continue
         if skipping: continue
         links = [a or b for a, b in LINK.findall(line)]
