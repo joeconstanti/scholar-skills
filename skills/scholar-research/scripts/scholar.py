@@ -6,7 +6,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
-TRACKING_KEYS = {"fbclid", "gclid", "igshid", "ref", "source"}
+TRACKING_KEYS = {"fbclid", "gclid", "igshid", "igsh", "ref", "source", "ref_src", "ref_url", "si", "mc_cid", "mc_eid", "msclkid", "yclid", "_hsenc", "_hsmi", "mkt_tok"}
+HOST_TRACKING = {"x.com": {"s", "t"}, "twitter.com": {"s", "t"}, "youtube.com": {"feature", "pp"}}
 SCOPE_FIELDS = ("decision", "audience", "geography", "language", "window", "platforms", "exclusions")
 LIST_FIELDS = {"platforms", "exclusions"}
 METRIC_WEIGHTS = {"views": .05, "likes": 1, "reactions": 1, "comments": 2, "shares": 3, "reposts": 3}
@@ -15,10 +16,16 @@ def now_iso(): return datetime.now(timezone.utc).replace(microsecond=0).isoforma
 def slugify(value): return (re.sub(r"[^a-z0-9]+", "-", value.lower()).strip("-")[:64] or "research")
 
 def canonical_url(value):
-    parts = urlsplit(value.strip())
-    query = [(k, v) for k, v in parse_qsl(parts.query, keep_blank_values=True)
-             if not k.lower().startswith("utm_") and k.lower() not in TRACKING_KEYS]
-    return urlunsplit((parts.scheme.lower(), parts.netloc.lower(), parts.path.rstrip("/") or "/", urlencode(query), ""))
+    parts = urlsplit(value.strip()); scheme = parts.scheme.lower(); host = (parts.hostname or "").lower()
+    netloc = host if parts.port in (None, 80 if scheme == "http" else 443) else f"{host}:{parts.port}"
+    path = parts.path
+    if host == "youtu.be" and path.strip("/"):
+        netloc, path, extra = "youtube.com", "/watch", [("v", path.strip("/"))]
+    else: extra = []
+    drop = HOST_TRACKING.get(host.removeprefix("www.").removeprefix("mobile."), set())
+    query = extra + [(k, v) for k, v in parse_qsl(parts.query, keep_blank_values=True)
+             if not k.lower().startswith("utm_") and k.lower() not in TRACKING_KEYS and k.lower() not in drop]
+    return urlunsplit((scheme, netloc, path.rstrip("/") or "/", urlencode(query), ""))
 
 def parse_metrics(values):
     result = {}
