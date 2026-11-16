@@ -51,4 +51,10 @@ class CitecheckTests(unittest.TestCase):
         finally: CC._probe_once = real
         self.assertEqual(len(calls), 1)
 
+    def test_query_identity(self):
+        self.assertNotEqual(CC.norm("https://e.org/?id=1"), CC.norm("https://e.org/?id=2"))
+        self.assertEqual(CC.norm("https://e.org/?b=2&a=1#x"), CC.norm("https://e.org/?a=1&b=2"))
+        found = CC.check("[x](https://e.org/?id=2)", {CC.norm("https://e.org/?id=1")}, [], False, 1)
+        self.assertEqual(found[0][2], "not-in-ledger")
+
 if __name__ == "__main__": unittest.main()
