@@ -86,11 +86,14 @@ def cmd_report(args):
     platforms = sorted({i.get("platform", "unknown") for i in items})
     lines = [f"# Research: {config['topic']}", "", f"_Generated {now_iso()} from {len(items)} evidence items across {len(platforms)} platforms._", "", "## Executive answer", "", "<!-- Replace with evidence-backed synthesis. -->", "", "## Scope and method", "", f"Platforms observed: {', '.join(platforms) if platforms else 'None yet'}.", ] + [f"- {k.title()}: {', '.join(config[k]) if isinstance(config[k], list) else config[k]}" for k in SCOPE_FIELDS if config.get(k)] + ["", "Trend scores are within-platform reading priorities based on recency and visible engagement; they are not comparable popularity measures.", "", "## Evidence ledger", ""]
     if not ranked: lines.append("No evidence collected yet.")
-    for item_score, item in ranked:
-        metrics = ", ".join(f"{k}={v:g}" for k, v in item.get("metrics", {}).items()) or "no visible metrics"
-        lines += [f"### [{item.get('title') or item['url']}]({item['url']})", "", f"- Platform: {item.get('platform', 'unknown')} · score: {item_score:.4f}", f"- Published: {item.get('published_at', 'unknown')} · observed: {item.get('observed_at', 'unknown')}", f"- Metrics at observation: {metrics}"]
-        if item.get("text"): lines.append(f"- Summary: {item['text']}")
-        lines.append("")
+    for platform in platforms:
+        group = [(sc, i) for sc, i in ranked if i.get("platform", "unknown") == platform]
+        lines += [f"### {platform} ({len(group)} items)", ""]
+        for rank, (item_score, item) in enumerate(group, 1):
+            metrics = ", ".join(f"{k}={v:g}" for k, v in item.get("metrics", {}).items()) or "no visible metrics"
+            lines += [f"#### {rank}. [{item.get('title') or item['url']}]({item['url']})", "", f"- Rank within {platform}: {rank}/{len(group)} · score: {item_score:.4f}", f"- Published: {item.get('published_at', 'unknown')} · observed: {item.get('observed_at', 'unknown')}", f"- Metrics at observation: {metrics}"]
+            if item.get("text"): lines.append(f"- Summary: {item['text']}")
+            lines.append("")
     queries = read_items(run / "queries.jsonl")
     lines += ["## Coverage log", ""]
     if not queries: lines.append("No queries logged. Use `scholar.py log-query` to record searches, including empty ones.")
