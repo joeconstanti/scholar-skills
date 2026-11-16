@@ -19,6 +19,8 @@ python3 <skill-dir>/scripts/scholar.py init --topic "<topic>" --output <workspac
 
 Read [references/method.md](references/method.md) before collecting. Read only the platform sections needed from [references/platforms.md](references/platforms.md). For repeat or scheduled monitoring, also read [references/monitoring.md](references/monitoring.md).
 
+When the output includes advertising, growth, offers, or sales strategy, establish who the work is for before researching. Ask for the company, product, or client URL plus geography and audience if the request does not already provide them. If a URL is supplied, inspect it and separate verified site claims from independent market evidence.
+
 ## Collection posture
 
 Prefer, in order:
@@ -28,6 +30,8 @@ Prefer, in order:
 3. Ordinary HTTP/browser collection with conservative concurrency and caching.
 4. Optional local crawlers when scale or JavaScript rendering warrants them.
 5. Paid APIs or scraping services only after explaining the access gap and asking for credentials or spend authorization.
+
+For reproducible no-cost API discovery, read [references/apis.md](references/apis.md) and use `scripts/collect_public_apis.py`. Preview and relevance-review API results before appending them. Project-configured MCPs can supplement these APIs, but unavailable or exhausted providers must remain documented gaps.
 
 Do not bypass authentication, CAPTCHAs, paywalls, access controls, or platform safeguards. Do not collect private profiles or unnecessary personal data. Stop on explicit denial, repeated throttling, or a platform instruction prohibiting the attempted access method; record the gap and continue with other sources.
 
@@ -54,8 +58,10 @@ python3 <skill-dir>/scripts/scholar.py report <run>
 
 Use trend scores to prioritize reading, never as proof of importance. Synthesize recurring themes, emerging signals, disagreements, audience language, and actionable opportunities. Distinguish observed evidence, cross-source inference, verified claims, and open uncertainty.
 
+For commercial research, do not equate technology chatter with demand. Build a buyer-demand matrix covering the workflow, buyer, trigger, urgency, budget proxy, implementation risk, required proof, and likely acquisition channel. Label evidence as attention, problem language, adoption, purchase intent, procurement, or first-party client evidence. Recommendations should connect a supported pain to a productized offer, proof mechanism, channel, and measurable business outcome.
+
 Stop when the requested deadline or cap is reached, every in-scope platform is covered or documented as unavailable, and the latest collection round adds no material theme or changes no conclusion. For open-ended requests, default to two collection passes and at least two independent sources for each major conclusion; extend only while new evidence materially changes the answer.
 
 ## Deliverable
 
-Update `report.md` with an executive answer, scope and method, strongest trends, platform differences, evidence links, opportunities, caveats, and uncovered gaps. Cite the direct item or authoritative source beside each claim. State exact collection dates and do not describe a trend as current outside the observed window.
+Update `report.md` with an executive answer, scope and method, strongest trends, platform differences, evidence links, opportunities, caveats, and uncovered gaps. For growth work, include prioritised ICPs, offers, buying barriers, acquisition plays, advertising hypotheses, landing-page implications, measurement, and the first-party data still needed. Cite the direct item or authoritative source beside each claim. State exact collection dates and do not describe a trend as current outside the observed window.

@@ -4,6 +4,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).parents[1]; SCRIPT = ROOT / "skills/scholar-research/scripts/scholar.py"
 SPEC = importlib.util.spec_from_file_location("scholar", SCRIPT); SCHOLAR = importlib.util.module_from_spec(SPEC); SPEC.loader.exec_module(SCHOLAR)
+COLLECTOR_SCRIPT = ROOT / "skills/scholar-research/scripts/collect_public_apis.py"
+COLLECTOR_SPEC = importlib.util.spec_from_file_location("collect_public_apis", COLLECTOR_SCRIPT)
+COLLECTOR = importlib.util.module_from_spec(COLLECTOR_SPEC); COLLECTOR_SPEC.loader.exec_module(COLLECTOR)
 
 class ScholarTests(unittest.TestCase):
     def test_canonical_url_removes_tracking_and_fragment(self):
@@ -24,5 +27,19 @@ class ScholarTests(unittest.TestCase):
             self.assertEqual(json.loads(records[0])["url"], "https://example.com/post")
             subprocess.run([sys.executable, str(SCRIPT), "report", str(run)], check=True, capture_output=True, text=True)
             self.assertIn("[A post](https://example.com/post)", (run / "report.md").read_text())
+
+    def test_public_api_record_normalizes_text_and_time(self):
+        item = COLLECTOR.record("test api", "https://example.com/a", "<b>A title</b>", "agent ops",
+                                published_at="Tue, 25 Aug 2026 09:00:00 GMT", text="<p>Useful  evidence</p>")
+        self.assertEqual(item["title"], "A title")
+        self.assertEqual(item["text"], "Useful evidence")
+        self.assertEqual(item["published_at"], "2026-08-25T09:00:00Z")
+
+    def test_public_api_append_deduplicates_platform_and_url(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "items.jsonl"
+            item = COLLECTOR.record("test api", "https://example.com/a", "A", "q")
+            self.assertEqual(COLLECTOR.append_unique(path, [item, item]), (1, 1))
+            self.assertEqual(len(path.read_text().splitlines()), 1)
 
 if __name__ == "__main__": unittest.main()
