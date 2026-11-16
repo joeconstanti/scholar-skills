@@ -72,4 +72,13 @@ class CitecheckTests(unittest.TestCase):
         text = "  ~~~~python\n10%\n~~~\n20%\n  ~~~~\n30%\n````\n```\n40%\n````\n50%"
         self.assertEqual([f[1] for f in CC.check(text, None, [], False, 1)], [6, 11])
 
+    def test_json_cli(self):
+        import json, subprocess, sys, tempfile
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "report.md"
+            path.write_text("Usage grew 30%.")
+            result = subprocess.run([sys.executable, str(SCRIPT), str(path), "--format", "json"], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 1)
+        self.assertEqual(json.loads(result.stdout)["findings"][0]["code"], "uncited-number")
+
 if __name__ == "__main__": unittest.main()
