@@ -81,4 +81,14 @@ class CitecheckTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertEqual(json.loads(result.stdout)["findings"][0]["code"], "uncited-number")
 
+    def test_invalid_ledger_fails_with_location(self):
+        import tempfile
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "items.jsonl"
+            with self.assertRaises(OSError): CC.ledger_urls([str(path)])
+            for content in ['[]', '{"sources": "bad"}', '{bad']:
+                path.write_text(content)
+                with self.assertRaisesRegex(ValueError, "items.jsonl:1:"):
+                    CC.ledger_urls([str(path)])
+
 if __name__ == "__main__": unittest.main()
