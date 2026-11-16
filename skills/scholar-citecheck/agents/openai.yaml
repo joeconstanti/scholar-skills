@@ -1,0 +1,4 @@
+interface:
+  display_name: "Scholar Citecheck"
+  short_description: "Mechanical citation gate for Markdown reports"
+  default_prompt: "Use $scholar-citecheck to check every citation in this report before sharing."
