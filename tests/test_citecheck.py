@@ -68,4 +68,8 @@ class CitecheckTests(unittest.TestCase):
         found = CC.check(text, None, ["Ignore"], False, 1)
         self.assertEqual([f[1] for f in found], [6])
 
+    def test_fence_types_and_lengths(self):
+        text = "  ~~~~python\n10%\n~~~\n20%\n  ~~~~\n30%\n````\n```\n40%\n````\n50%"
+        self.assertEqual([f[1] for f in CC.check(text, None, [], False, 1)], [6, 11])
+
 if __name__ == "__main__": unittest.main()
