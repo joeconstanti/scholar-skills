@@ -71,6 +71,15 @@ class CollectorTests(unittest.TestCase):
     def test_gdelt_compact_time_is_iso(self):
         self.assertEqual(COLLECTOR.gdelt_time("20260825T090000Z"), "2026-08-25T09:00:00+00:00".replace("+00:00", "Z"))
 
+    def test_arxiv_parses_atom_and_filters_old(self):
+        from unittest import mock
+        recent = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        feed = f"""<feed xmlns="http://www.w3.org/2005/Atom"><entry><id>http://arxiv.org/abs/1</id><title>New</title><published>{recent}</published><summary>S</summary><author><name>A</name></author></entry>
+        <entry><id>http://arxiv.org/abs/2</id><title>Old</title><published>2001-01-01T00:00:00Z</published></entry></feed>""".encode()
+        with mock.patch.object(COLLECTOR, "get", lambda url: feed):
+            items = COLLECTOR.collect_arxiv("q", 10, 30)
+        self.assertEqual([i["url"] for i in items], ["https://arxiv.org/abs/1"])
+
     def test_get_retries_on_429(self):
         from unittest import mock
         from urllib.error import HTTPError
