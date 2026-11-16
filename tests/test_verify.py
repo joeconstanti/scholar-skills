@@ -31,4 +31,18 @@ class ClaimsTests(unittest.TestCase):
             claims.save(path, [{"id": "new"}])
             self.assertEqual(claims.load(path), [{"id": "new"}])
 
+    def test_list_filters_claims_without_mutating(self):
+        import json
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "claims.jsonl"
+            run("add", str(path), "--id", "C1", "--claim", "one", "--kind", "number")
+            run("add", str(path), "--id", "C2", "--claim", "two", "--kind", "date")
+            run("verdict", str(path), "--id", "C2", "--verdict", "supported", "--source", "https://e.org")
+            before = path.read_bytes()
+            result = run("list", str(path), "--verdict", "unchecked", "--kind", "number")
+            self.assertEqual(result.returncode, 0)
+            self.assertEqual([json.loads(line)["id"] for line in result.stdout.splitlines()], ["C1"])
+            self.assertEqual(run("list", str(path), "--kind", "legal").stdout, "")
+            self.assertEqual(path.read_bytes(), before)
+
 if __name__ == "__main__": unittest.main()

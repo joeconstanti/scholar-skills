@@ -31,3 +31,7 @@ Exit 0 means no errors. Exit 1 lists errors and warnings with line numbers.
 | `bare-search-link` | error | Cite the underlying page, not a search or results URL |
 
 Fix every error. Explain any warning you keep in the report's caveats. Rerun until it exits zero.
+
+### Automation and input handling
+
+Use `--format json` for a JSON object containing `report` and `findings` (severity, line, code, detail). Diagnostics and counts go to stderr. Exit codes: 0 for no errors, 1 for citation errors, 2 for invalid input. Explicit ledger paths must exist and contain JSONL objects with string URLs and an optional list of string sources. Timeout and worker limits must be positive. URL queries identify distinct resources; parameter order and fragments do not. Ignored sections include descendant headings; backtick and tilde code fences are excluded.

@@ -47,6 +47,15 @@ def cmd_verdict(args):
     match[0].update({"verdict": args.verdict, "sources": args.source or [], "note": args.note or "", "checked_at": now_iso()})
     save(path, claims); print(f"{args.id}: {args.verdict}"); return 0
 
+def cmd_list(args):
+    claims = load(Path(args.path))
+    for claim in claims:
+        verdict = claim.get("verdict", "unchecked")
+        if args.verdict and verdict != args.verdict: continue
+        if args.kind and claim.get("kind") != args.kind: continue
+        print(json.dumps(claim, ensure_ascii=False, sort_keys=True))
+    return 0
+
 def cmd_summary(args):
     claims = load(Path(args.path)); counts = {}
     for c in claims: counts[c.get("verdict", "unchecked")] = counts.get(c.get("verdict", "unchecked"), 0) + 1
@@ -66,6 +75,11 @@ def parser():
     add.add_argument("--kind", default="other"); add.add_argument("--location"); add.set_defaults(func=cmd_add)
     v = sub.add_parser("verdict"); v.add_argument("path"); v.add_argument("--id", required=True); v.add_argument("--verdict", required=True)
     v.add_argument("--source", action="append"); v.add_argument("--note"); v.set_defaults(func=cmd_verdict)
+    listing = sub.add_parser("list", help="print claims as JSONL, optionally filtered")
+    listing.add_argument("path")
+    listing.add_argument("--verdict", choices=["unchecked", *sorted(VERDICTS)])
+    listing.add_argument("--kind", choices=sorted(KINDS))
+    listing.set_defaults(func=cmd_list)
     s = sub.add_parser("summary"); s.add_argument("path"); s.set_defaults(func=cmd_summary); return root
 
 def main():
