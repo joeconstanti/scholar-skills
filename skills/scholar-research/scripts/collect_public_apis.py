@@ -265,10 +265,10 @@ def main() -> int:
             time.sleep(max(0, args.pause))
     if args.preview:
         print(json.dumps({"collected": collected, "errors": errors}, ensure_ascii=False, indent=2))
-        return 1 if errors and not collected else 0
+        return 1 if errors else 0
     added, skipped = append_unique(args.path, collected)
     print(json.dumps({"added": added, "duplicates": skipped, "collected": len(collected), "errors": errors}, indent=2))
-    return 1 if errors and not collected else 0
+    return 1 if errors else 0
 
 
 if __name__ == "__main__":
