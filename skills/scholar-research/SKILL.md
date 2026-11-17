@@ -54,6 +54,8 @@ Log every search, including ones with no useful results, so coverage is auditabl
 python3 <skill-dir>/scripts/scholar.py log-query <run> --platform reddit --query "<query>" --results 0 --notes "only spam"
 ```
 
+Metric names must be nonempty; values must be finite, nonnegative numbers. Invalid metrics are rejected before appending, and imported metrics are checked before report scoring.
+
 Engagement values are platform-specific snapshots, not comparable audience counts. Store query-result pages only as discovery evidence; open the underlying source before using it to support a factual claim.
 
 ## Synthesis and stopping
