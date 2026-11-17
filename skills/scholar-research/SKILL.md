@@ -64,6 +64,8 @@ Periodically generate the working report:
 python3 <skill-dir>/scripts/scholar.py report <run>
 ```
 
+The command creates `report.md` once and refuses to overwrite an existing report. Use `report <run> --force` only when you intend to replace all authored content with a fresh scaffold; save your synthesis first.
+
 Use trend scores to prioritize reading, never as proof of importance. Synthesize recurring themes, emerging signals, disagreements, audience language, and actionable opportunities. Distinguish observed evidence, cross-source inference, verified claims, and open uncertainty.
 
 For commercial research, do not equate technology chatter with demand. Build a buyer-demand matrix covering the workflow, buyer, trigger, urgency, budget proxy, implementation risk, required proof, and likely acquisition channel. Label evidence as attention, problem language, adoption, purchase intent, procurement, or first-party client evidence. Recommendations should connect a supported pain to a productized offer, proof mechanism, channel, and measurable business outcome.
