@@ -23,13 +23,53 @@ class ClaimsTests(unittest.TestCase):
         claims = importlib.util.module_from_spec(spec); spec.loader.exec_module(claims)
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / "claims.jsonl"
-            claims.save(path, [{"id": "old"}])
+            claims.save(path, [{"id": "old", "claim": "old claim", "kind": "other"}])
             with patch.object(claims.os, "replace", side_effect=OSError("disk failure")):
-                with self.assertRaises(OSError): claims.save(path, [{"id": "new"}])
-            self.assertEqual(claims.load(path), [{"id": "old"}])
+                with self.assertRaises(OSError): claims.save(path, [{"id": "new", "claim": "new claim", "kind": "other"}])
+            self.assertEqual(claims.load(path), [{"id": "old", "claim": "old claim", "kind": "other"}])
             self.assertEqual(list(Path(temp).iterdir()), [path])
-            claims.save(path, [{"id": "new"}])
-            self.assertEqual(claims.load(path), [{"id": "new"}])
+            claims.save(path, [{"id": "new", "claim": "new claim", "kind": "other"}])
+            self.assertEqual(claims.load(path), [{"id": "new", "claim": "new claim", "kind": "other"}])
+
+    def test_missing_and_invalid_ledgers_fail_closed(self):
+        import json
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "claims.jsonl"
+            for command in ("summary", "list"):
+                result = run(command, str(path))
+                self.assertEqual(result.returncode, 2)
+                self.assertNotIn("No blocking claims", result.stdout)
+            self.assertFalse(path.exists())
+            valid = {"id": "C1", "claim": "claim", "kind": "other"}
+            invalid = [None, [], {"id": "C1"}, {**valid, "verdict": "typo"},
+                       {**valid, "verdict": None}, {**valid, "verdict": "supported"},
+                       {**valid, "sources": "url"}, {**valid, "sources": [2]},
+                       {**valid, "verdict": "partly", "note": " "},
+                       {**valid, "kind": []}]
+            for row in invalid:
+                path.write_text("\n" + json.dumps(row) + "\n")
+                before = path.read_bytes()
+                for args in [("summary",), ("list",), ("add", "--id", "C2", "--claim", "new")]:
+                    result = run(args[0], str(path), *args[1:])
+                    self.assertEqual(result.returncode, 2, row)
+                    self.assertIn("claims.jsonl:2:", result.stderr)
+                    self.assertNotIn("Traceback", result.stderr)
+                    self.assertEqual(path.read_bytes(), before)
+            path.write_text(json.dumps(valid) + "\n" + json.dumps(valid) + "\n")
+            self.assertIn("duplicate claim id", run("summary", str(path)).stderr)
+            path.write_text("")
+            self.assertEqual(run("summary", str(path)).returncode, 0)
+
+    def test_blank_claim_and_verdict_evidence_are_not_saved(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "claims.jsonl"
+            self.assertEqual(run("add", str(path), "--id", " ", "--claim", "text").returncode, 2)
+            self.assertFalse(path.exists())
+            self.assertEqual(run("add", str(path), "--id", "C1", "--claim", "text").returncode, 0)
+            before = path.read_bytes()
+            result = run("verdict", str(path), "--id", "C1", "--verdict", "supported", "--source", " ")
+            self.assertEqual(result.returncode, 2)
+            self.assertEqual(path.read_bytes(), before)
 
     def test_list_filters_claims_without_mutating(self):
         import json
