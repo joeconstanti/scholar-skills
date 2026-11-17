@@ -25,3 +25,5 @@ python3 <skill-dir>/scripts/collect_public_apis.py <run>/items.jsonl --preview \
 Review the preview for semantic relevance before rerunning without `--preview`. Broad generic terms can create false matches in government and code indexes; use quoted phrases, repository or domain qualifiers, sector names, and concrete workflow language. Do not add a result merely because the endpoint matched it.
 
 For buyer-demand work, build separate query families for workflow pain, purchase intent, implementation barriers, governance, agency operations, and sector-specific processes. Do not combine their counts into a market-size claim.
+
+Collector limits: `--max-results` and `--days` must be positive integers; `--pause` must be finite and nonnegative (zero is allowed). Queries must not be blank. Invalid options exit 2 before requests or ledger writes.
