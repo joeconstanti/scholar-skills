@@ -27,4 +27,5 @@ Review the preview for semantic relevance before rerunning without `--preview`. 
 For buyer-demand work, build separate query families for workflow pain, purchase intent, implementation barriers, governance, agency operations, and sector-specific processes. Do not combine their counts into a market-size claim.
 
 In preview and append modes, exit 0 means every requested source/query completed, including valid empty results. Any source/query failure exits 1, even when other sources returned evidence. Successful evidence is still printed or appended; inspect the JSON `errors` list and record those coverage gaps. Do not blindly retry a partial run.
+
 Collector limits: `--max-results` and `--days` must be positive integers; `--pause` must be finite and nonnegative (zero is allowed). Queries must not be blank. Invalid options exit 2 before requests or ledger writes.
