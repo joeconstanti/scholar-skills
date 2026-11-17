@@ -35,6 +35,23 @@ class ScholarTests(unittest.TestCase):
             subprocess.run([sys.executable, str(SCRIPT), "report", str(run)], check=True, capture_output=True, text=True)
             report = (run / "report.md").read_text(); self.assertIn("[A post](https://example.com/post)", report); self.assertIn("### reddit (1 items)", report); self.assertIn("Rank within reddit: 1/1", report)
 
+    def test_report_preserves_authored_content_unless_forced(self):
+        with tempfile.TemporaryDirectory() as temp:
+            def cli(*args):
+                return subprocess.run([sys.executable, str(SCRIPT), *args], capture_output=True, text=True)
+            self.assertEqual(cli("init", "--topic", "Draft", "--output", temp).returncode, 0)
+            run = Path(temp) / "draft"
+            self.assertEqual(cli("report", str(run)).returncode, 0)
+            report = run / "report.md"
+            report.write_text("Authored analysis with sources.\n")
+            before = report.read_bytes()
+            refused = cli("report", str(run))
+            self.assertEqual(refused.returncode, 2)
+            self.assertIn("--force", refused.stderr)
+            self.assertEqual(report.read_bytes(), before)
+            self.assertEqual(cli("report", str(run), "--force").returncode, 0)
+            self.assertIn("# Research: Draft", report.read_text())
+
     def test_public_api_record_normalizes_text_and_time(self):
         item = COLLECTOR.record("test api", "https://example.com/a", "<b>A title</b>", "agent ops",
                                 published_at="Tue, 25 Aug 2026 09:00:00 GMT", text="<p>Useful  evidence</p>")
