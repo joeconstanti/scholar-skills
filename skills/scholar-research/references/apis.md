@@ -25,3 +25,5 @@ python3 <skill-dir>/scripts/collect_public_apis.py <run>/items.jsonl --preview \
 Review the preview for semantic relevance before rerunning without `--preview`. Broad generic terms can create false matches in government and code indexes; use quoted phrases, repository or domain qualifiers, sector names, and concrete workflow language. Do not add a result merely because the endpoint matched it.
 
 For buyer-demand work, build separate query families for workflow pain, purchase intent, implementation barriers, governance, agency operations, and sector-specific processes. Do not combine their counts into a market-size claim.
+
+In preview and append modes, exit 0 means every requested source/query completed, including valid empty results. Any source/query failure exits 1, even when other sources returned evidence. Successful evidence is still printed or appended; inspect the JSON `errors` list and record those coverage gaps. Do not blindly retry a partial run.

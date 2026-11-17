@@ -43,3 +43,13 @@ Comparable maintained projects: [lychee](https://github.com/lycheeverse/lychee) 
 ## Progress
 
 Research complete. Top five accepted for implementation under the criteria above. Network adapter tests will use offline fixtures: these prove CLI and error behavior, not current availability of arbitrary research sources. Human source support remains outside the mechanical citation gate. No production deployment workflow is present.
+
+### Implementation milestones
+
+- #1 report protection: PR #23 merged; 26 local tests and hosted Python 3.10/3.12 checks passed; main Action 44131322356 succeeded.
+- #2 claims input gate: PR #24 merged; 28 local tests and both hosted checks passed; main Action 44131612912 succeeded.
+- #3 finite metrics: PR #25 merged; 30 local tests and both hosted checks passed; main Action 44131884332 succeeded.
+- #4 collector options: PR #26 opened after 32 local tests passed. Hosted checks and merge tracked in the campaign thread.
+- #5 partial collection status: focused offline tests cover mixed failure, total failure, successful empty and nonempty outcomes in preview/append modes. Hosted full-suite checks and merge tracked in the campaign thread.
+
+The coordinator paused new heavy local validation because of shared host load after the already-running 32-test suite. Further validation uses focused local tests and hosted full suites until a slot is available. Historical campaign #13–22 is separate from this campaign. No earlier failed run is being used to excuse a current failure.
