@@ -19,6 +19,35 @@ class ScholarTests(unittest.TestCase):
         self.assertEqual(c("https://youtu.be/abc123?si=zz"), "https://youtube.com/watch?v=abc123")
         self.assertEqual(c("http://example.com:8080/a?s=keep"), "http://example.com:8080/a?s=keep")
 
+    def test_invalid_metrics_do_not_append_or_score(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "items.jsonl"
+            path.write_text("")
+            for metric in ("likes=nan", "likes=inf", "likes=-1", "likes=1e999", "=3"):
+                result = subprocess.run([sys.executable, str(SCRIPT), "add", str(path),
+                                         "--platform", "test", "--url", "https://e.org", "--title", "T",
+                                         "--metrics", metric], capture_output=True, text=True)
+                self.assertEqual(result.returncode, 2, metric)
+                self.assertEqual(path.read_bytes(), b"")
+                self.assertNotIn("Traceback", result.stderr)
+        for metrics in ({"likes": float("nan")}, {"likes": float("inf")}, {"likes": -1},
+                        {"likes": "3"}, {"likes": True}, [], {"": 3}, {"likes": 10 ** 400},
+                        {"shares": 1e308}):
+            with self.subTest(metrics=metrics), self.assertRaises(ValueError):
+                SCHOLAR.score({"metrics": metrics})
+        self.assertEqual(SCHOLAR.parse_metrics(["custom=2.5", "likes=0"]), {"custom": 2.5, "likes": 0})
+        self.assertEqual(SCHOLAR.score({"metrics": {"likes": 0}}), 0)
+
+    def test_report_rejects_invalid_imported_metrics_without_writing(self):
+        with tempfile.TemporaryDirectory() as temp:
+            run = Path(temp)
+            (run / "run.json").write_text('{"topic": "Test"}')
+            (run / "items.jsonl").write_text(json.dumps({"url": "https://e.org", "metrics": {"likes": -1}}))
+            result = subprocess.run([sys.executable, str(SCRIPT), "report", str(run)], capture_output=True, text=True)
+            self.assertEqual(result.returncode, 2)
+            self.assertIn("finite and nonnegative", result.stderr)
+            self.assertFalse((run / "report.md").exists())
+
     def test_score_rewards_engagement_and_recency(self):
         observed = datetime(2026, 8, 25, tzinfo=timezone.utc); base = {"published_at": "2026-08-24T00:00:00Z", "metrics": {"likes": 10}}
         self.assertGreater(SCHOLAR.score({**base, "metrics": {"likes": 100}}, observed), SCHOLAR.score(base, observed))
