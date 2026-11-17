@@ -11,9 +11,40 @@ BLOCKING = {None, "unsupported", "contradicted"}
 
 def now_iso(): return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
-def load(path: Path) -> list[dict]:
-    if not path.exists(): return []
-    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+def validate_claim(claim: dict) -> None:
+    if not isinstance(claim, dict): raise ValueError("expected a claim object")
+    for field in ("id", "claim"):
+        if not isinstance(claim.get(field), str) or not claim[field].strip():
+            raise ValueError(f"{field} must be a nonempty string")
+    if claim.get("kind") not in KINDS: raise ValueError("invalid claim kind")
+    verdict = claim.get("verdict")
+    if "verdict" in claim and verdict not in VERDICTS: raise ValueError("invalid claim verdict")
+    sources = claim.get("sources", [])
+    if not isinstance(sources, list) or any(not isinstance(u, str) or not u.strip() for u in sources):
+        raise ValueError("sources must be a list of nonempty strings")
+    if verdict == "supported" and not sources: raise ValueError("supported needs at least one source")
+    note = claim.get("note", "")
+    if not isinstance(note, str): raise ValueError("note must be a string")
+    if verdict in {"partly", "contradicted"} and not note.strip():
+        raise ValueError(f"{verdict} needs a note with the correct version")
+
+def load(path: Path, *, allow_missing: bool = False) -> list[dict]:
+    try:
+        text = path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        if allow_missing: return []
+        raise
+    claims, seen = [], set()
+    for number, line in enumerate(text.splitlines(), 1):
+        if not line.strip(): continue
+        try:
+            claim = json.loads(line)
+            validate_claim(claim)
+            if claim["id"] in seen: raise ValueError(f"duplicate claim id: {claim['id']}")
+        except (ValueError, TypeError) as exc:
+            raise ValueError(f"{path}:{number}: {exc}") from exc
+        claims.append(claim); seen.add(claim["id"])
+    return claims
 
 def save(path: Path, claims: list[dict]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -31,10 +62,11 @@ def save(path: Path, claims: list[dict]) -> None:
             temporary.unlink(missing_ok=True)
 
 def cmd_add(args):
-    path = Path(args.path); claims = load(path)
+    path = Path(args.path); claims = load(path, allow_missing=True)
     if args.kind not in KINDS: raise ValueError(f"kind must be one of {sorted(KINDS)}")
     if any(c["id"] == args.id for c in claims): raise ValueError(f"claim id exists: {args.id}")
     claims.append({"id": args.id, "claim": args.claim, "kind": args.kind, "location": args.location or "", "added_at": now_iso()})
+    validate_claim(claims[-1])
     save(path, claims); print(args.id); return 0
 
 def cmd_verdict(args):
@@ -45,6 +77,7 @@ def cmd_verdict(args):
     match = [c for c in claims if c["id"] == args.id]
     if not match: raise ValueError(f"unknown claim id: {args.id}")
     match[0].update({"verdict": args.verdict, "sources": args.source or [], "note": args.note or "", "checked_at": now_iso()})
+    validate_claim(match[0])
     save(path, claims); print(f"{args.id}: {args.verdict}"); return 0
 
 def cmd_list(args):
