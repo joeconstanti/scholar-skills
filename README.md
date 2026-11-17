@@ -186,6 +186,8 @@ limits. TikTok is excluded because the available MCP needs a paid API key.
 | **Validate** | Run `python3 -m unittest discover -s tests -v`; it also lints every skill |
 | **PR** | Explain the behavior change and give the actual validation |
 
+See [CI validation notes](docs/ci.md) for focused commands, run triggers, cancellation and evidence limits.
+
 Useful contributions: new no-key public sources, better deduplication and
 stronger verification checks. Keep paid services optional.
 
