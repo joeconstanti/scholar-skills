@@ -10,6 +10,7 @@ from __future__ import annotations
 import argparse
 import gzip
 import json
+import math
 import os
 import re
 import time
@@ -247,6 +248,11 @@ def main() -> int:
     parser.add_argument("--pause", type=float, default=0.4)
     parser.add_argument("--preview", action="store_true", help="Print collected records without changing the ledger")
     args = parser.parse_args()
+    if args.max_results <= 0: parser.error("--max-results must be positive")
+    if args.days <= 0: parser.error("--days must be positive")
+    if not math.isfinite(args.pause) or args.pause < 0:
+        parser.error("--pause must be finite and nonnegative")
+    if any(not query.strip() for query in args.query): parser.error("--query must not be blank")
     sources = list(COLLECTORS) if not args.source or "all" in args.source else args.source
     collected = []
     errors = []
