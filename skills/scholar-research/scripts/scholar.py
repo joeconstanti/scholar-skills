@@ -32,7 +32,8 @@ def parse_metrics(values):
     for value in values:
         if "=" not in value: raise ValueError(f"metric must be NAME=NUMBER: {value}")
         name, raw = value.split("=", 1); number = float(raw)
-        if number < 0: raise ValueError("metrics cannot be negative")
+        if not name.strip(): raise ValueError("metric name cannot be empty")
+        if not math.isfinite(number) or number < 0: raise ValueError("metrics must be finite and nonnegative")
         result[name.strip().lower()] = number
     return result
 
@@ -40,11 +41,26 @@ def parse_time(value):
     parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
     return (parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)).astimezone(timezone.utc)
 
+def validate_metrics(metrics):
+    if not isinstance(metrics, dict): raise ValueError("metrics must be an object")
+    for name, value in metrics.items():
+        if not isinstance(name, str) or not name.strip(): raise ValueError("metric name cannot be empty")
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ValueError(f"metric {name} must be a number")
+        try:
+            valid = math.isfinite(value) and value >= 0
+        except OverflowError:
+            valid = False
+        if not valid: raise ValueError(f"metric {name} must be finite and nonnegative")
+
 def score(item, observed=None):
     observed = observed or datetime.now(timezone.utc)
     published = item.get("published_at") or item.get("observed_at")
     age = max(0, (observed - parse_time(published)).total_seconds() / 86400) if published else 0
-    engagement = sum(METRIC_WEIGHTS.get(k, .25) * float(v) for k, v in item.get("metrics", {}).items())
+    metrics = item.get("metrics", {})
+    validate_metrics(metrics)
+    engagement = sum(METRIC_WEIGHTS.get(k, .25) * float(v) for k, v in metrics.items())
+    if not math.isfinite(engagement): raise ValueError("weighted engagement exceeds finite numeric range")
     return round(math.log1p(engagement) / (1 + age / 7), 4)
 
 def read_items(path):
