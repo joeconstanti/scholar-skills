@@ -53,3 +53,5 @@ The summary exits non-zero while any claim is unchecked, `contradicted`, or `uns
 `python3 skills/scholar-verify/scripts/claims.py list claims.jsonl --verdict unchecked --kind number`
 
 The `list` command emits JSONL without changing the ledger. Both filters are optional and combine when supplied. Saves use atomic replacement; coordinate concurrent writers externally.
+
+Read commands require an existing ledger; only `add` can create one. Invalid JSONL, duplicate IDs, invalid kinds/verdicts, or missing verdict evidence exit 2 with a file and line diagnostic. Each row needs nonempty string `id` and `claim`, a valid `kind`, and string-list `sources` when present. A deliberately empty existing ledger is valid.
