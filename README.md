@@ -135,6 +135,8 @@ python3 $S/scholar.py log-query runs/ai-coding-agents --platform reddit \
 python3 $S/scholar.py report runs/ai-coding-agents
 ```
 
+`report` preserves an existing `report.md`. To replace it with a new scaffold, save any authored analysis and pass `report <run> --force`.
+
 Review `--preview` output for relevance before you run the collector without it.
 
 Verify and check the report:

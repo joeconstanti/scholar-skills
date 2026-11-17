@@ -107,7 +107,13 @@ def cmd_report(args):
     for q in queries: lines.append(f"- {q.get('observed_at', '?')} · {q.get('platform', '?')} · `{q.get('query', '')}` → {q.get('results', '?')} results" + (f" ({q['notes']})" if q.get("notes") else ""))
     lines.append("")
     lines += ["## Findings", "", "<!-- Cluster evidence into supported trends and counter-signals. -->", "", "## Gaps and caveats", "", "<!-- Record unavailable platforms, sampling limits, and unresolved claims. -->", ""]
-    output = run / "report.md"; output.write_text("\n".join(lines), encoding="utf-8"); print(output); return 0
+    output = run / "report.md"
+    try:
+        with output.open("w" if args.force else "x", encoding="utf-8") as handle:
+            handle.write("\n".join(lines))
+    except FileExistsError as exc:
+        raise ValueError(f"report already exists: {output} (use --force to replace authored content)") from exc
+    print(output); return 0
 
 def parser():
     root = argparse.ArgumentParser(description=__doc__); commands = root.add_subparsers(dest="command", required=True)
@@ -119,7 +125,7 @@ def parser():
     add.add_argument("--metrics", nargs="*", default=[]); add.set_defaults(func=cmd_add)
     log = commands.add_parser("log-query"); log.add_argument("run"); log.add_argument("--platform", required=True); log.add_argument("--query", required=True)
     log.add_argument("--results", type=int, required=True); log.add_argument("--observed-at"); log.add_argument("--notes"); log.set_defaults(func=cmd_log_query)
-    report = commands.add_parser("report"); report.add_argument("run"); report.set_defaults(func=cmd_report); return root
+    report = commands.add_parser("report"); report.add_argument("run"); report.add_argument("--force", action="store_true", help="replace an existing report, including authored content"); report.set_defaults(func=cmd_report); return root
 
 def main():
     try:
