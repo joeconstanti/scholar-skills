@@ -18,6 +18,16 @@ code 10% here
 """
 
 class CitecheckTests(unittest.TestCase):
+    def test_ledger_keeps_unicode_separators_in_metadata(self):
+        import json
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "items.jsonl"
+            row = {"url": "https://example.org/a", "title": "one\u0085two\u2028three\u2029four"}
+            path.write_text(json.dumps(row, ensure_ascii=False) + "\n", encoding="utf-8")
+            self.assertEqual(CC.ledger_urls([str(path)]), {"example.org/a"})
+
     def test_findings(self):
         codes = [(n, c) for _, n, c, _ in CC.check(REPORT, {"example.org/survey"}, ["Evidence ledger"], False, 1)]
         self.assertIn((4, "uncited-number"), codes)

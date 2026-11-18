@@ -35,7 +35,7 @@ def load(path: Path, *, allow_missing: bool = False) -> list[dict]:
         if allow_missing: return []
         raise
     claims, seen = [], set()
-    for number, line in enumerate(text.splitlines(), 1):
+    for number, line in enumerate(text.split("\n"), 1):
         if not line.strip(): continue
         try:
             claim = json.loads(line)

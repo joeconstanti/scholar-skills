@@ -66,7 +66,7 @@ def score(item, observed=None):
 def read_items(path):
     if not path.exists(): return []
     items = []
-    for line_no, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+    for line_no, line in enumerate(path.read_text(encoding="utf-8").split("\n"), 1):
         if line.strip():
             try: items.append(json.loads(line))
             except json.JSONDecodeError as exc: raise ValueError(f"invalid JSON on {path}:{line_no}: {exc.msg}") from exc

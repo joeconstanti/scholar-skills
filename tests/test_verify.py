@@ -16,6 +16,16 @@ class ClaimsTests(unittest.TestCase):
             self.assertEqual(run("verdict", path, "--id", "C1", "--verdict", "supported", "--source", "https://e.org/s").returncode, 0)
             out = run("summary", path); self.assertEqual(out.returncode, 0); self.assertIn("[1](https://e.org/s)", out.stdout)
 
+    def test_cli_round_trips_unicode_separators_in_claims(self):
+        import json
+        with tempfile.TemporaryDirectory() as temp:
+            path = str(Path(temp) / "claims.jsonl")
+            claim = "one\u0085two\u2028three\u2029four"
+            self.assertEqual(run("add", path, "--id", "C1", "--claim", claim).returncode, 0)
+            listed = run("list", path)
+            self.assertEqual(listed.returncode, 0, listed.stderr)
+            self.assertEqual(json.loads(listed.stdout)["claim"], claim)
+
     def test_failed_replace_preserves_ledger(self):
         import importlib.util
         from unittest.mock import patch
