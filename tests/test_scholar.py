@@ -101,6 +101,44 @@ class ScholarTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "items.jsonl:2:"):
                 SCHOLAR.read_items(path)
 
+    def test_add_preserves_unterminated_imported_evidence(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "items.jsonl"
+            item = {"platform": "test", "url": "https://example.org/a", "observed_at": "2026-01-01"}
+            original = json.dumps(item).encode("utf-8")
+            path.write_bytes(original)
+
+            def add(url):
+                return subprocess.run(
+                    [sys.executable, str(SCRIPT), "add", str(path), "--platform", "test",
+                     "--url", url, "--title", "New", "--observed-at", item["observed_at"]],
+                    capture_output=True, text=True, check=True,
+                )
+
+            self.assertIn("duplicate skipped", add(item["url"]).stderr)
+            self.assertEqual(path.read_bytes(), original)
+            add("https://example.org/b")
+            add("https://example.org/c")
+            records = SCHOLAR.read_items(path)
+            self.assertEqual(records[0], item)
+            self.assertEqual([row["url"] for row in records[1:]], [
+                "https://example.org/b", "https://example.org/c",
+            ])
+            self.assertEqual(path.read_bytes().count(b"\n"), 3)
+
+    def test_collector_separates_first_new_record_after_unterminated_import(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "items.jsonl"
+            old = COLLECTOR.record("test", "https://example.org/a", "Old", "q")
+            new = COLLECTOR.record("test", "https://example.org/b", "New", "q")
+            original = json.dumps(old).encode("utf-8")
+            path.write_bytes(original)
+            self.assertEqual(COLLECTOR.append_unique(path, [old]), (0, 1))
+            self.assertEqual(path.read_bytes(), original)
+            self.assertEqual(COLLECTOR.append_unique(path, [old, new]), (1, 1))
+            self.assertTrue(path.read_bytes().startswith(original + b"\n"))
+            self.assertEqual(SCHOLAR.read_items(path), [old, new])
+
     def test_public_api_append_deduplicates_platform_and_url(self):
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / "items.jsonl"
@@ -118,6 +156,22 @@ class ScopeTests(unittest.TestCase):
             self.assertIn("- Geography: UK", (run / "report.md").read_text())
 
 class QueryLogTests(unittest.TestCase):
+    def test_log_query_preserves_unterminated_imported_entry(self):
+        with tempfile.TemporaryDirectory() as temp:
+            run = Path(temp)
+            (run / "run.json").write_text('{"topic":"Test"}', encoding="utf-8")
+            path = run / "queries.jsonl"
+            entry = {"platform": "test", "query": "Previous", "results": 3}
+            path.write_text(json.dumps(entry), encoding="utf-8")
+            subprocess.run(
+                [sys.executable, str(SCRIPT), "log-query", str(run), "--platform", "test",
+                 "--query", "Next", "--results", "0"],
+                capture_output=True, text=True, check=True,
+            )
+            previous, latest = SCHOLAR.read_items(path)
+            self.assertEqual(previous, entry)
+            self.assertEqual(latest["query"], "Next")
+
     def test_empty_query_is_logged_in_report(self):
         with tempfile.TemporaryDirectory() as temp:
             subprocess.run([sys.executable, str(SCRIPT), "init", "--topic", "Q", "--output", temp], check=True, capture_output=True)

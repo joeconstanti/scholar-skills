@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Local, dependency-free evidence pipeline for scholar-research."""
 from __future__ import annotations
-import argparse, json, math, re, sys
+import argparse, json, math, os, re, sys
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
@@ -72,6 +72,17 @@ def read_items(path):
             except json.JSONDecodeError as exc: raise ValueError(f"invalid JSON on {path}:{line_no}: {exc.msg}") from exc
     return items
 
+
+def append_record(path: Path, item: dict) -> None:
+    record = (json.dumps(item, ensure_ascii=False, sort_keys=True) + "\n").encode("utf-8")
+    with path.open("a+b") as handle:
+        if handle.tell():
+            handle.seek(-1, os.SEEK_END)
+            if handle.read(1) != b"\n":
+                record = b"\n" + record
+        handle.write(record)
+
+
 def cmd_init(args):
     run = Path(args.output) / slugify(args.topic); run.mkdir(parents=True, exist_ok=True)
     config = run / "run.json"
@@ -92,7 +103,7 @@ def cmd_add(args):
     item = {"platform": args.platform.lower(), "url": url, "title": args.title, "observed_at": observed_at, "metrics": parse_metrics(args.metrics)}
     for name in ("author", "published_at", "query", "text", "notes"):
         if getattr(args, name): item[name] = getattr(args, name)
-    with path.open("a", encoding="utf-8") as handle: handle.write(json.dumps(item, ensure_ascii=False, sort_keys=True) + "\n")
+    append_record(path, item)
     print(url); return 0
 
 def cmd_log_query(args):
@@ -100,7 +111,7 @@ def cmd_log_query(args):
     if not (run / "run.json").exists(): raise ValueError(f"not a run directory: {run}")
     entry = {"platform": args.platform.lower(), "query": args.query, "results": args.results, "observed_at": args.observed_at or now_iso()}
     if args.notes: entry["notes"] = args.notes
-    with path.open("a", encoding="utf-8") as handle: handle.write(json.dumps(entry, ensure_ascii=False, sort_keys=True) + "\n")
+    append_record(path, entry)
     print(path); return 0
 
 def cmd_report(args):
