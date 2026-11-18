@@ -88,6 +88,19 @@ class ScholarTests(unittest.TestCase):
         self.assertEqual(item["text"], "Useful evidence")
         self.assertEqual(item["published_at"], "2026-08-25T09:00:00Z")
 
+    def test_evidence_readers_keep_unicode_separators_in_records(self):
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "items.jsonl"
+            title = "one\u0085two\u2028three\u2029four"
+            item = {"platform": "test", "url": "https://example.org/a", "title": title}
+            path.write_bytes((json.dumps(item, ensure_ascii=False) + "\r\n").encode("utf-8"))
+            self.assertEqual(SCHOLAR.read_items(path), [item])
+            self.assertEqual(COLLECTOR.append_unique(path, [item]), (0, 1))
+            with path.open("a", encoding="utf-8") as handle:
+                handle.write("{")
+            with self.assertRaisesRegex(ValueError, "items.jsonl:2:"):
+                SCHOLAR.read_items(path)
+
     def test_public_api_append_deduplicates_platform_and_url(self):
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / "items.jsonl"

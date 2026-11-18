@@ -33,7 +33,7 @@ def ledger_urls(paths: list[str]) -> set[str]:
     urls = set()
     for path in paths:
         p = Path(path)
-        for number, line in enumerate(p.read_text(encoding="utf-8").splitlines(), 1):
+        for number, line in enumerate(p.read_text(encoding="utf-8").split("\n"), 1):
             if not line.strip(): continue
             try:
                 row = json.loads(line)

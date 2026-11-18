@@ -223,7 +223,7 @@ COLLECTORS = {
 def append_unique(path: Path, items: list[dict]) -> tuple[int, int]:
     existing = []
     if path.exists():
-        existing = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
+        existing = [json.loads(line) for line in path.read_text(encoding="utf-8").split("\n") if line.strip()]
     seen = {(item.get("platform"), item.get("url")) for item in existing}
     added = 0
     path.parent.mkdir(parents=True, exist_ok=True)
